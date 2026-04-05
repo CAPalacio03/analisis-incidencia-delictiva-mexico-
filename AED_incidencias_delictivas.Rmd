@@ -1,0 +1,1915 @@
+---
+title: "MIDE: DIPLOMADO EN CIENCIA DE DATOS"
+subtitle: "GUIA DE ANÁLISIS EXPLORATORIO DE DATOS"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    theme: paper
+    toc: true
+    toc_float: true
+bibliography: D:/Personal/Biblioteca/Bibliografias/biblio.bib
+---
+
+```{=html}
+<!--
+
+NOTA IMPORTANTE: si ejecutas este Rmd, es necesario que quites (o modifiques) la línea en el YAML correspondiente a la bibliografía. En su defecto, la compilación marcará un error.
+
+-->
+```
+
+```{=html}
+<!-- 
+
+themes: 
+cosmo    **
+spacelab ***
+readable **
+cerulean **
+darkly   **
+flatly   *
+bootstrap
+journal
+lumen
+default -->
+```
+
+```{r, warning=FALSE, error=FALSE, message=FALSE}
+
+library(DT)         # xie2020
+library(knitr)      # xie2014
+library(reshape2)   # wickham2007
+library(ggplot2)    # wickham2016
+library(dplyr)      # wickham2020b
+library(scales)     # wickham2020
+library(kableExtra) # zhu2021
+#library(Hmisc)      # harrell2020
+
+```
+
+---
+  nocite: |
+    @rcoreteam2020, @xie2014, @xie2020, @wickham2007, @wickham2016, @wickham2020, @wickham2020b, @zhu2021, @harrell2020
+---
+
+# INTRODUCCIÓN
+
+> El Análisis Exploratorio de Datos es trabajo de detective - trabajo de detective numérico - o trabajo de detective de conteo - o trabajo gráfico de detective. @tukey2020
+
+-   Una de las formas de dividir a la Estadística para su estudio es a partir del uso que queremos hacer de las técnicas.
+
+    -   Frecuentemente, usamos las técnicas estadísticas cuando necesitamos **confirmar** alguna hipótesis que tenemos respecto de un problema que estamos analizando; buscamos confirmar aspectos de la realidad a partir de información observada $\Rightarrow$ estamos usando **estadística inferencial** para establecer hasta qué punto la información (evidencia) recolectada respalda nuestras creencias.
+
+    -   En ocasiones, sin embargo, también nos enfrentamos al estudio de fenómenos completamente nuevos para nosotros; aspectos de la realidad de los que tenemos datos pero respecto de los cuales no tenemos ninguna postura en particular que queramos confirmar o descartar $\Rightarrow$ usamos entonces **estadística descriptiva** o **exploratoria** para intentar entender lo que los datos nos dicen respecto del fenómeno de estudio.
+
+> De alguna manera, mediante el AED buscamos poder formular esas hipótesis que posteriormente intentaremos confirmar o negar mediante la estadística inferencial.
+
+> Lo que queremos, de manera muy informal, es conocer los datos con los que vamos a estar trabajando. Explorarlos para ver qué hay ahí.
+
+Lo vamos a intentar hacer de manera sistemática y ordenada.
+
+**Advertencia de carácter general**
+
+> El proceso del AED es iterativo. Frecuentemente va a ser necesario regresar a alguno de los pasos y reiniciar el proceso.
+
+# TIPOS DE DATOS
+
+Para poder "explorar" los datos de interés, primero tenemos que conocer con qué tipo de datos contamos. Algunas técnicas / herramientas serán apropiadas para un tipo de datos pero no para otros.
+
+Tipos de datos:
+
+-   Cualitativos o categóricos:
+
+    -   Nominales
+
+    -   Ordinales
+
+-   Cuantitativos:
+
+    -   Discretos
+
+    -   Continuos
+
+-   Textos (datos no estructurados)
+
+Para las variables cuantitativas, además, podemos tener diferentes escalas de medición:
+
+-   De intervalos
+
+-   De razones
+
+Cuando estudiamos el tipo de datos con los que contamos, también es importante considerar la manera en la que se nos presentan:
+
+-   Univariados
+
+-   Multivariados
+
+    -   Datos composicionales
+
+    -   Series de tiempo
+
+    -   Datos en panel
+
+# DICCIONARIOS DE DATOS
+
+Desde luego el contexto importa. Si bien podemos explorar o describir un conjunto de datos desde una perspectiva ajena a todo contexto, nuestra exploración será mucho más rica o informativa si conocemos el contexto de los datos siendo analizados.
+
+Una manera de ganar contexto sobre los datos con los que vamos a trabajar es elaborando un "diccionario de datos".
+
+-   Describe en forma general nuesto conjunto de datos: de dónde proviene, cómo fue acopiado, quién lo acopió, cuál es el objetivo que se persigue con la recolección de estos datos, cuál el objetivo que se persigue con su uso.
+
+-   Describe también en forma individual cada una de las variables de nuestro conjunto de datos.
+
+    -   De manera textual, define a cada una de las variables.
+
+    -   Describe también el tipo de dato y el formato con el que se encuentra capturado.
+
+Todo esto es importante no solamente para poder familiarizarnos con los datos y su potencial uso, sino también para poder seleccionar apropiadamente la técnica a utilizar en su análisis.
+
+Preguntas generales que nos podemos plantear a partir de este análisis:
+
+-   ¿Se observan características "inesperadas" en los datos? (en otras palabras, ¿se observar rasgos o datos atípicos o problemas de "calidad"?)
+
+-   ¿Es posible formular alguna hipótesis sobre el comportamiento de las variables?
+
+-   ¿Qué tipo de inferencia estadística es necesario/posible realizar? ¿Qué conjunto de técnicas se pueden contemplar?
+
+-   ¿Es necesario conseguir más datos?
+
+# DATOS
+
+Vamos a ver algunos datos ...
+
+```{r}
+
+datos <- 
+  read.table(
+    file = 'IDEFC_NM_may22.csv'
+    , header = TRUE
+    , sep = ','
+    , quote = "\"" 
+    ,fileEncoding = "latin1")
+
+datatable(data = head(datos), rownames = FALSE)
+
+```
+
+Estos datos corresponden a información sobre incidencia delictiva y victimización publicados por el SESNP ([link](https://www.gob.mx/sesnsp/acciones-y-programas/datos-abiertos-de-incidencia-delictiva?state=published))
+
+Los datos fueron consultados el 30 de junio del 2022 de la página y corresponden a datos hasta el mes de mayo de 2022. Estos datos son actualizados (normalmente) el día 20 de cada mes.
+
+Dijimos que una herramienta muy útil es armar un diccionario de datos. Afortunadamente, el proveedor de estos datos nos proporciona uno.
+
+Desde luego, el diccionario es perfectible y lo podemos ir complementando con información que consideremos relevante.
+
+-   Tipo de dato
+
+-   Unidades de medición
+
+-   Valores permitidos
+
+    -   En variables categóricas: catálogo de valores (categorías)
+
+    -   En variables cuantitativas: rango de valores permisibles
+
+Todo esto nos permitirá documentar nuestros datos pero también formalizar el entendimiento de los mismos.
+
+Algunas manera de ayudarnos a realizar esta tarea:
+
+-   En R, la función *str* nos proporciona un primer conjunto de descripciones básicas de nuestros datos:
+
+```{r, size='tiny'}
+
+str(object = datos)
+
+```
+
+Otra opción es utilizar *summary*:
+
+```{r}
+
+summary(object = datos)
+
+```
+
+Un paquete al que recurro con frecuencia para auxiliarme en el armado de estas primeras exploraciones de los datos es el paquete *Hmisc*:
+
+```{r}
+
+Hmisc::describe(x = datos)
+
+```
+
+# PREPARACIÓN DE LOS DATOS
+
+Ya tengo una primera impresión de mis datos. Ya conozco la estructura en la que me son presentados. Lo más probable es que ya tenga una(s) primera(s) idea(s) de qué quiero o puedo comenzar a hacer con mis datos. Pero es muy probable que antes de poder hacer eso, necesite yo realizar algunas tareas básicas con los datos. Los tengo que preparar para su uso.
+
+-   Algo de limpieza: vacíos, formatos (p.e., fechas), números leídos como caracteres, ¿factores?
+
+-   Codificaciones
+
+-   Re-etiquetado
+
+-   Transformaciones "prácticas"
+
+    -   Re-estructura de los datos: en el caso de nuestro ejemplo, la presentación de los meses en columnas es un poco desafortunada, así que transformaremos esas columnas en un atributo más (aquí uso otro paquete al que recurro con frecuencia: *reshape2*):
+
+```{r}
+
+datos.2 <- 
+  melt(
+    data = datos, 
+    id.vars = 1:(ncol(datos)-12), 
+    measure.vars = (ncol(datos)-11):ncol(datos), 
+    variable.name = 'MES',
+    value.name = 'DELITOS')
+
+str(datos.2)
+
+datatable(data = head(datos.2), rownames = FALSE)
+
+```
+
+-   
+
+    -   Fechas: me conviene crear una columna con un atributo que represente mejor la fecha a la que corresponde cada dato (observen también que las fechas son "especiales" en R, por lo que me aseguro de que venga en el formato apropiado):
+
+```{r}
+
+# Convierto el mes a caracter porque se encontraba en formato de factor.
+# 
+datos.2$MES <- as.character(datos.2$MES)
+
+# Elimino los registros correspondientes al total del año.
+# 
+datos.2 <- datos.2[datos.2$MES != 'Total',]
+
+# Los siguientes "catálogos" me permitirán crear la columna de fechas.
+# 
+mes <- 
+  c(
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre')
+
+mes.indice <- c(1:12)
+
+mes.dia <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+# Busca el mes en el catálogo de meses y le asigna el número de mes que le
+#  corresponde.
+# 
+datos.2$MES.2 <- 
+  sapply(datos.2$MES, FUN = function(x){mes.indice[mes == x]})
+
+# Le asigna el día correspondiente al último día del mes.
+# 
+datos.2$MES.DIA <- sapply(datos.2$MES.2, function(x){mes.dia[x]})
+
+# Crea la fecha (como tipo de dato fecha).
+# 
+datos.2$FECHA <- 
+  as.Date(
+    x = paste(datos.2$Año, datos.2$MES.2, datos.2$MES.DIA, sep = '-'),
+    format = '%Y-%m-%d')
+
+```
+
+-   Transformaciones "numéricas": cuando tratamos con variables cuantitativas, con frecuencia algunos patrones se vuelven más obvios si realizamos alguna transformación a las variables.
+
+    -   Potencias: quizá las más empleadas sean $\lambda = \frac{1}{2}$ o $\lambda = 2$
+
+$$x_i' = x_i^{\lambda}$$
+
+```         
+- Estandarizaciones:
+```
+
+$$z_i = \frac{x_i - \bar{x}}{s}$$
+
+```         
+- Otras transformaciones relevantes: por ejemplo:
+```
+
+$$g(y) = \left\{ \array{\frac{y^{\lambda} - 1}{\lambda} & \lambda \neq 0 \\ ln(y) & \lambda = 0} \right.$$
+
+Por el momento no realizaremos ninguna transformación a nuestros datos, dejaremos el tema de transformaciones para un poco más adelante, pero es importante tenerlo en mente.
+
+Veamos entonces cómo quedaron nuestros datos después de transformarlos (paso muy importante siempre):
+
+```{r}
+
+Hmisc::describe(x = datos.2)
+
+```
+
+Observemos que cuando transformamos los datos creamos datos faltantes (**les dije que era muy importante este paso**), por lo que tenemos que quitarlos.
+
+> ¿Cómo? ¿Podemos quitarlos así nada más? !!!
+
+```{r}
+datos.2 <- datos.2[complete.cases(datos.2),]
+```
+
+------------------------------------------------------------------------
+
+DATOS FALTANTES
+
+:   Aprovechemos para hablar brevemente sobre los datos faltantes.
+
+Investigar / revisar los datos faltantes es muy importante:
+
+-   En ocasiones el dato faltante es un valor permitido. Pero casi siempre son valores que nos pueden generar "problemas" en nuestro análisis por lo que es importante tener conciencia de qué variables / atributos los presentan.
+
+    -   Nos obliga a pensar en la mejor manera de "re-codificar" la variable.
+
+    -   Si esto es necesario, recomiendo siempre hacerlo en un "atributo" nuevo.
+
+-   En otras ocasiones nos hablan o nos describen algunas características del proceso o fenómeno en sí mismo.
+
+    -   Pueden ser señales en el proceso de generación / acopio de nuestros datos.
+
+    -   ¿Podemos resolver esos problemas? $\Rightarrow$ Volver a la fase de acopio.
+
+    -   ¿No podemos?
+
+    -   $\Rightarrow$ ¿Podemos aplicar alguna metodología de imputación de datos faltantes?
+
+    -   En su defecto, ¿es válido quitar estas observaciones de los datos?
+
+------------------------------------------------------------------------
+
+En nuestros datos no encontramos valores faltantes (salvo los que nosotros generamos al momento de transformar la estructura de los datos), por lo que seguimos adelante.
+
+Supongamos ahora que nuestro interés se centra en los delitos de homicidio.
+
+Observemos primero, que en nuestros datos, para cada tipo de delito, tenemos sub-tipos y modalidades. Para no complicar demasiado nuestro ejercicio, vamos a concentrarnos en los tipos y sub-tipos.
+
+Tenemos entonces que hacer dos cosas:
+
+-   "Filtrar" nuestros datos:
+
+```{r}
+
+datos.3 <- datos.2[which(datos.2$Tipo.de.delito == 'Homicidio'),]
+
+head(datos.3)
+
+```
+
+-   Agruparlos para que no tengamos duplicados (por las diferentes modalidades). Ojo, en las agrupaciones es muy importante reflexionar sobre cuál es la función de agrupación relevante (en este caso voy a sumar los delitos):
+
+```{r}
+
+datos.3 <- 
+  aggregate(
+    x = list(DELITOS = datos.3$DELITOS)
+    , by = 
+      list(
+        FECHA = datos.3$FECHA
+        , Entidad = datos.3$Entidad
+        , Subtipo.de.delito = datos.3$Subtipo.de.delito
+        )
+    , FUN = sum
+    )
+
+Hmisc::describe(datos.3)
+
+```
+
+Adicionalmente (esto es un poco "extra") ...
+
+... pero nuevamente, ¿qué creen? ...
+
+... **CONTEXTO**
+
+... queremos agregar la población estatal de cada año ...
+
+```{r}
+
+print(readLines(con = 'pob_mit_proyecciones.csv', n = 10))
+
+poblacion <- 
+  read.table(file = 'pob_mit_proyecciones.csv', 
+             sep = ','
+             , header = TRUE
+             , fileEncoding = "latin1")
+
+# Lo agregamos para obtener la población total.
+# 
+poblacion <- 
+  aggregate(
+    x = list(POBLACION = poblacion$POBLACION)
+    , by = list(AÑO = poblacion$AÑO, ENTIDAD = poblacion$ENTIDAD)
+    , FUN = sum
+    )
+
+# Agregamos la poblacion a nuestros datos.
+# 
+datos.3$AÑO <- substr(datos.3$FECHA, start = 1, stop = 4)
+
+# Limpiamos los nombres de algunos estados ...
+# 
+datos.3$Entidad[which(datos.3$Entidad == 'Coahuila de Zaragoza')] <- 'Coahuila'
+datos.3$Entidad[which(datos.3$Entidad == 'Michoacán de Ocampo')] <- 'Michoacán'
+datos.3$Entidad[which(datos.3$Entidad == 'Veracruz de Ignacio de la Llave')] <- 
+  'Veracruz'
+
+# Agregamos la población haciendo un join por la derecha (para los que tienen 
+# cierto conocimiento de bases de datos):
+# 
+datos.3 <- 
+  merge(
+    x = datos.3
+    , y = poblacion
+    , by.x = c('AÑO', 'Entidad')
+    , by.y = c('AÑO', 'ENTIDAD')
+    , all.x = TRUE
+    )
+
+summary(datos.3)
+
+# Calculamos los delitos per capita ...
+# 
+datos.3$DELITOS.PC <- datos.3$DELITOS / datos.3$POBLACION
+
+# Multiplicamos por 100,000
+# 
+datos.3$DELITOS.PC <- datos.3$DELITOS.PC*100000
+
+```
+
+Con esto lo que logramos es que el dato de los delitos sea comparable en el tiempo y entre estados (de otra manera estaríamos "contaminando" con la mera fluctuación de población).
+
+Entonces, ya tengo unos datos que me interesa conocer más a detalle: datos históricos de los homicidios (per capita) en cada estado por tipo de homicidio (sub-tipo de delito).
+
+# DESCRIPCIÓN ESTADÍSTICA DE LOS DATOS
+
+Entonces, ahora podemos comenzar propiamente a explorar o describir nuestros datos, pero dijimos que lo queríamos hacer en forma sistemática y ordenada. Para ello echaremos mano de conceptos estadísticos.
+
+# DESCRIPCIÓN UNIVARIADA DE LOS DATOS
+
+Queremos describir el conjunto de datos con los que estamos trabajando, y comenzaremos describiendo las variables una a una.
+
+Desde luego, esto dependerá del tipo de datos que tenemos, pero en general buscamos utilizar **estadísticas**: es decir, un nuevo dato, "sintético", creado a partir de nuestros datos, que describe en forma resumida algún rasgo relevante de la variable.
+
+¿Por qué hacemos esto? Pues porque nos interesa conocer la forma en la que se "distribuyen" nuestros datos. Esto puede tener muchas implicaciones muy diversas:
+
+-   Puede determinar los pasos a seguir en mi proyecto (p.e., identificar variables que necesitan ser transformadas)
+
+-   Puede determinar el tipo de herramientas/modelos a utilizar (p.e., identificando si es razonable esperar que algunos de los supuestos se cumplan).
+
+-   Permite identificar posibles relaciones entre las variables que determine o impacte en algunos de los puntos ya señalados.
+
+-   Permite identificar posibles problemas en los datos.
+
+# ESTADÍSTICAS RESUMEN
+
+Para variables categóricas:
+
+-   Número de categorías:
+
+    -   Veamos un ejemplo que debería ser muy obvio: la entidad federativa: en nuestros datos hay `r length(unique(datos.3$Entidad))` diferentes valores para la variable $Entidad$. Lo cual es de esperarse.
+
+-   Lista de las categorías: por experiencia, es importante revisar, porque con frecuencia los nombres de los estados son capturados con errores o con variaciones.
+
+    -   No siempre se puede pero, si el número de valores únicos no es muy grande, podemos revisar la lista completa:
+
+```{r}
+unique(datos.3$Entidad)
+```
+
+-   Frecuencia de cada categoría:
+
+```{r}
+
+kable(
+  x = 
+    table(datos.3$Entidad)
+  , row.names = FALSE
+  , format = 'pandoc'
+  , align = c('l', 'r')
+  , col.names = c('ENTIDAD', 'FRECUENCIA')
+  )
+
+```
+
+Observemos que aquí la estadística de referencia es meramente la aparición del estado en nuestros datos. Por la manera en la que se construye el conjunto de datos esto probablemente no se a lo más conveniente.
+
+Nuevamente ...
+
+... **CONTEXTO** ...
+
+En nuestro caso quizá sea más relevante asociarlo al dato de delitos (pensemos que se registra el nombre del estado cada que ocurre un delito, de cualquier tipo) ...
+
+... adicionalmente, es útil presentar la frecuencia *relativa* ...
+
+... y ordenados, ¿quizá? ...
+
+```{r}
+
+estados <- 
+  aggregate(
+    x = list(Delitos = datos.3$DELITOS)
+    , by = list(Entidad = datos.3$Entidad)
+    , FUN = sum
+    )
+
+estados$Participación <- estados$Delitos / sum(estados$Delitos)
+
+estados <- estados[order(estados$Participación, decreasing = TRUE),]
+
+kable(
+  x = 
+    estados %>% 
+    mutate(Delitos = comma(Delitos, accuracy = 1)) %>% 
+    mutate(Participación = percent(Participación, accuracy = 0.01))
+  , row.names = FALSE
+  , format = 'pandoc'
+  , align = c('l', 'r' ,'r')
+  )
+
+```
+
+-   Moda: la categoría más frecuentemente observada:
+
+```{r}
+estados$Entidad[which(estados$Delitos == max(estados$Delitos))]
+```
+
+Para variables cuantitativas, generalmente el interés se centra en describir las siguientes características de los datos:
+
+-   Centralidad
+
+-   Dispersión
+
+-   Sesgo
+
+-   Kurtosis
+
+Aunque, realmente, casi todo el mundo se enfoca en la centralidad y la dispersión.
+
+Nuevamente, familiarizarnos con las características de nuestros datos nos permite:
+
+-   Descubir rasgos inesperados, desconocidos o posiblemente erróneos en los datos.
+
+-   Identificar patrones de distribución de nuestros datos familiares.
+
+    -   Para plantear opciones de modelado.
+
+    -   Para proponer transformaciones que faciliten el posterior modelado.
+
+-   Desde luego, plantear las preguntas de investigación que vamos a intentar resolver mediante inferencia.
+
+### MEDIDAS DE CENTRALIDAD
+
+Estas medidas describe en dónde se encuentran los valores "medios" de nuestros datos.
+
+**Media**
+
+:   el valor promedio; se ve afectada por valores extremos (no es "robusta").
+
+$$\bar{X} = \frac{1}{n} \sum\limits_{i=1}^n x_i$$
+
+En nuestros datos, el número de delitos per capita promedio es `r mean(datos.3$DELITOS.PC)`:
+
+-   Total de delitos per capita capturados: `r sum(datos.3$DELITOS.PC)`
+
+-   Total de observaciones: `r nrow(datos.3)`
+
+¿Qué nos dice este dato en nuestros datos?
+
+> Es el número de delitos per capita promedio histórico por mes por estado y por tipo/modalidad de delito.
+
+**Mediana**
+
+:   es una estadística de orden, correspondiente al valor que se encuentra "a la mitad" de los valores; es una medición de centralidad "robusta", en el sentido de que no se ve afectada por valores extremos.
+
+En nuestros datos, la mediana de los delitos es `r median(datos.3$DELITOS.PC)`.
+
+> Ahora, ¿qué nos dice este dato?
+
+**Moda**
+
+:   en datos cuantitativos la moda corresponde al valor de la variable que concentra la mayor densidad de probabilidad. Para obtener es necesario entonces estimar su función de densidad:
+
+```{r}
+
+fd <- density(x = datos.3$DELITOS.PC)
+
+plot(fd)
+
+fd$x[which(fd$y == max(fd$y))]
+
+```
+
+Vamos a dejar las visualizaciones para un poco más adelante.
+
+### MEDIDAS DE DISPERSIÓN
+
+Las medidas de dispersión nos dicen qué tan "alejados" o "cercanos" se encuentran nuestros datos entre sí.
+
+Rango
+
+:   la diferencia entre el mayor y el menor de los valores de una variable. Tiene el problema de no decirnos mucho sobre la distribución de los datos.
+
+```{r}
+max(datos.3$DELITOS.PC)
+min(datos.3$DELITOS.PC)
+max(datos.3$DELITOS.PC)-min(datos.3$DELITOS.PC)
+```
+
+¿Es razonable que haya meses en los que en un estado completo no haya un solo homicidio doloso o culposo?
+
+Podríamos explorar eso un poco más.
+
+Rango intercuartil
+
+:   el 50% de los datos más centrales, esto es, la diferencia entre el valor correspondiente al 3er. cuartil y el 1er. cuartil.
+
+```{r}
+
+quantile(x=datos.3$DELITOS.PC, probs = c(0.25, 0.75))
+
+as.numeric(quantile(x=datos.3$DELITOS.PC, probs = 0.75) - 
+  quantile(x=datos.3$DELITOS.PC, probs = c(0.25)))
+
+```
+
+Recordemos que en nuestros datos la mediana se encontraba:
+
+```{r}
+
+quantile(x = datos.3$DELITOS.PC, probs = c(0.5))
+
+```
+
+Varianza
+
+:   corresponde a la diferencia cuadrática media de los datos respecto de su media:
+
+$$s^2 = \frac{1}{n} \sum\limits_{i=1}^{n} (x_i - \bar{x})$$
+
+Con mayor frecuencia se utiliza la fórmula de la varianza muestral[^1]:
+
+[^1]: Ver Anexo 1, para la prueba de que el estimador de la varianza es un estimador sesgado.
+
+$$s^2 = \frac{1}{n-1} \sum\limits_{i=1}^{n} (x_i - \bar{x})$$
+
+```{r}
+var(x = datos.3$DELITOS.PC)
+```
+
+**Ojo**: la varianza está expresada en las unidades de medición al cuadrado. Por lo tanto, es frecuente presentar la desviación estándar:
+
+$$s = \sqrt{s^2}$$
+
+```{r}
+sd(x = datos.3$DELITOS.PC)
+```
+
+Un punto de referencia importante para valorar la dispersión de nuestros datos es la distribución normal. En particular, sabemos que si nuestros datos tienen una distribución normal con varianza unitaria, seguirán el siguiente patrón:
+
+|   $\sigma$    | Prob. |
+|:-------------:|:-----:|
+| $\pm \sigma$  | 0.680 |
+| $\pm 2\sigma$ | 0.950 |
+| $\pm 3\sigma$ | 0.997 |
+
+Desviación mediana absoluta respecto de la mediana (MAD)
+
+:   es la desviación de los datos en valor absoluto respecto de su mediana:
+
+$$MAD = med(|x_i - med(x)|)$$
+
+La MAD es una medición robusta.
+
+```{r}
+mad(x = datos.3$DELITOS.PC)
+```
+
+### OTRAS MEDIDAS DE FORMA
+
+Asimetría
+
+:   el coeficiente de asimetría nos describe a la distribución de los datos en términos de si esta se *inclina* a la izquierda (asimetría positiva, cola a la derecha), o bien, a la derecha (asimetría negativa, cola a la izquierda).
+
+$$\ = \frac{E[(X - \mu)^3]}{\sigma^3}$$
+
+Veamos un ejemplo con nuestros datos:
+
+```{r}
+
+temp <- 
+  datos.3[
+    which(
+      datos.3$Entidad == 'Ciudad de México' & 
+        datos.3$Subtipo.de.delito == 'Homicidio doloso'
+      )
+    ,
+    ]
+
+asimetria <- sum(((temp$DELITOS.PC - mean(temp$DELITOS.PC))/sd(temp$DELITOS.PC))^3)/nrow(temp)
+
+print(asimetria)
+
+```
+
+Los datos presentan, entonces, una asimetría positiva.
+
+```{r}
+
+fd <- density(x = temp$DELITOS.PC)
+
+mode.temp <- fd$x[which(fd$y == max(fd$y))]
+
+ggplot(data = temp, mapping = aes(x = DELITOS.PC)) +
+  geom_density() +
+  geom_vline(xintercept = mean(temp$DELITOS.PC), colour = 'blue') +
+  geom_vline(xintercept = median(temp$DELITOS.PC), colour = 'red') +
+  geom_vline(xintercept = mode.temp, colour = 'green') +
+  theme_minimal()
+
+```
+
+Curtosis
+
+:   la es una estadística que describe la forma de la distribución de los datos en términos de qué tanta densidad se acumula en la moda de la distribución (o, recíprocamente, en las colas de la distribución). Por ello, es una medida muy relevante si deseamos buscar evidencia de la posible existencia de valores atípicos.
+
+$$\kappa = \frac{E[(X - \mu)^4]}{\sigma^4}$$
+
+Aunque con mayor frecuencia se proporciona el coeficiente de *exceso* de curtosis:
+
+$$\kappa = \frac{E[(X - \mu)^4]}{\sigma^4} - 3$$
+
+Esto es, porque al tratarse de una estadística relativa a la "forma" de la distribución, generalmente se compara contra la forma de una distribución normal.
+
+Comparemos la curtosis de dos diferentes estados:
+
+```{r}
+
+# Ciudad de México:
+# 
+kurtosis.cdmx <- 
+  sum(((temp$DELITOS.PC - mean(temp$DELITOS.PC))/sd(temp$DELITOS.PC))^3) / 
+  nrow(temp)
+
+print(kurtosis.cdmx)
+
+# Baja California Sur:
+# 
+temp <- 
+  datos.3[
+    which(
+      datos.3$Entidad == 'Baja California Sur' & 
+        datos.3$Subtipo.de.delito == 'Homicidio doloso'
+      )
+    ,
+    ]
+
+kurtosis.bcs <- 
+  sum(((temp$DELITOS.PC - mean(temp$DELITOS.PC))/sd(temp$DELITOS.PC))^3) / 
+  nrow(temp)
+
+print(kurtosis.bcs)
+
+```
+
+## VISUALIZACIONES
+
+Vamos ahora a juntar varias de estas ideas en gráficos ...
+
+... porque una imagen vale más que mil palabras ...
+
+![](mal_mapa.png)
+
+... a veces.
+
+En primera instancia, podemos utilizar gráficos de barras para mostrar la frecuencia con la que aparecen datos categóricos:
+
+```{r}
+
+ggplot(data = datos.3, mapping = aes(x = Subtipo.de.delito, y = DELITOS.PC)) +
+  geom_col() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+O en forma relativa (sustituyendo a lo que sería una gráfica de pay).
+
+> ¿Alguien usa gráficas de pay? [Link](https://www.data-to-viz.com/caveat/pie.html)
+
+```{r}
+
+ggplot(
+  data = datos.3
+  , mapping = aes(x = Subtipo.de.delito, y = DELITOS.PC/sum(DELITOS.PC))
+  ) +
+  geom_col() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  ylab('% DELITOS PC')
+
+```
+
+Podemos también revisarlos por entidad federativa:
+
+```{r}
+
+ggplot(
+  data = datos.3
+  , mapping = aes(x = Subtipo.de.delito, y = DELITOS.PC/sum(DELITOS.PC))
+  ) +
+  geom_col() +
+  facet_wrap(facets = . ~ Entidad, ncol = 6) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  ylab('%')
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.3[which(datos.3$Entidad == 'Ciudad de México'),]
+  , mapping = aes(x = Subtipo.de.delito, y = DELITOS.PC/sum(DELITOS.PC))
+  ) +
+  geom_col() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  ylab('%')
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.3[which(datos.3$Entidad == 'Yucatán'),]
+  , mapping = aes(x = Subtipo.de.delito, y = DELITOS.PC/sum(DELITOS.PC))
+  ) +
+  geom_col() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  ylab('%')
+
+```
+
+```{r}
+
+datos.4 <- 
+  dcast(data = datos.3, formula = FECHA + Entidad ~ Subtipo.de.delito, value.var = 'DELITOS.PC')
+
+```
+
+Una visualización muy útil es el diagrama de caja y brazos ...
+
+Permite mostrar en una sola imagen rasgos relevantes de la distribución de nuestros datos (típicamente, algunas configuraciones cambian): la mediana, el primer cuartil, el tercer cuartil, datos extremos ...
+
+Veamos cómo se ve la "distribución" de los homicidios dolosos per capita:
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = `Homicidio doloso`)
+  ) +
+  geom_boxplot() +
+  theme_minimal()
+
+```
+
+> ¿Qué estamos viendo aquí? ¿Sería diferente si vieramos la distribución de los homicidios dolosos per capita a nivel nacional? ¿Necesito ajustar mis preguntas de investigación?
+
+Si ahora vemos la distribución de los homicidios dolosos por entidad:
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = `Homicidio doloso`)
+  ) +
+  geom_boxplot() +
+  facet_wrap(facets = . ~ Entidad, ncol = 6) +
+  theme_minimal()
+
+```
+
+Desde luego, existen mejores maneras de presentar estos datos:
+
+-   Podemos poner los estados uno junto al otro y ordenarlos ...
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = Entidad)
+  ) +
+  geom_boxplot(mapping = aes(`Homicidio doloso`)) +
+  theme_minimal()
+
+```
+
+-   ... y ordenarlos ...
+
+```{r}
+
+temp <- 
+  aggregate(
+    x = list(MEDIANA = datos.4$`Homicidio doloso`)
+    , by = list(ENTIDAD = datos.4$Entidad)
+    , FUN = median
+    )
+
+temp <- temp[order(temp$MEDIANA),]
+
+datos.4$Entidad.f <- factor(datos.4$Entidad, levels = temp$ENTIDAD, ordered = TRUE)
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = Entidad.f)
+  ) +
+  geom_boxplot(mapping = aes(`Homicidio doloso`)) +
+  theme_minimal()
+
+```
+
+> ¿Recuerdan la diferencia de curtosis entre BCS y CDMX?
+
+-   Podríamos agregar el dato nacional para mejorar la referencia de comparación.
+
+Por el momento no lo vamos a hacer.
+
+Otra manera de visualizar la manera en la que se "distribuyen" los datos es graficando su función de distribución, aunque generalmente somos (soy) mejores interpretando las funciones de **densidad**, que es lo que haremos.
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = `Homicidio doloso`)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  theme_minimal() +
+  labs(title = 'Densidad histórica del homicidio doloso per capita')
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = `Homicidio doloso`)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  facet_wrap(facets = 'Entidad.f', ncol = 4, scales = 'free') +
+  theme_minimal() +
+  labs(title = 'Densidad histórica del homicidio doloso per capita')
+
+```
+
+Y, si nos enfocamos en una de las entidades federativas en particular:
+
+```{r}
+
+ggplot(
+  data = datos.4[which(datos.4$Entidad == 'Ciudad de México'),]
+  , mapping = aes(x = `Homicidio doloso`)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  theme_minimal() +
+  labs(
+    title = 'Densidad histórica del homicidio doloso per capita'
+    , subtitle = 'Ciudad de México'
+    )
+
+```
+
+... y están también las gráficas de violín.
+
+```{r}
+
+ggplot(
+  data = datos.4[which(datos.4$Entidad %in% c('Ciudad de México', 'Yucatán')),]
+  , mapping = aes(x = Entidad.f, y = `Homicidio doloso`)
+  ) +
+  geom_violin() +
+  theme_minimal() +
+  labs(
+    title = 'Densidad histórica del homicidio doloso per capita'
+    )
+
+```
+
+# TRANSFORMACIONES
+
+Retomemos ahora el tema de las transformaciones. Las transformaciones son útiles porque algunas nos ayudan a observar rasgos que en la escala original de las variables no son tan obvios. También es frecuente observar que la variable transformada se comporta de manera que es más fácil modelarla. En ocasiones, también, la variable transformada puede compararse más fácilmente contra otras variables.
+
+Estandarización
+
+:   la estandarización busca que obtengamos una variable cuya media se encuentre en el 0 y cuya desviación estándar sea igual a 1. Muy utilizada sobre todo en datos multivariados. Sobre todo, si para nuestro análisis es relevante el uso de variables estandarizadas (p.e., k-medias), es recomendable que haga un análisis exploratorio sobre las variables transformadas también.
+
+```{r}
+
+datos.4$HD.SD.1 <- 
+  (datos.4$`Homicidio doloso` - mean(datos.4$`Homicidio doloso`)) / 
+  sd(datos.4$`Homicidio doloso`)
+
+Hmisc::describe(datos.4$HD.SD.1)
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = HD.SD.1)
+  ) +
+  geom_boxplot() +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = HD.SD.1)
+  ) +
+  geom_density() +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = Entidad.f)
+  ) +
+  geom_boxplot(mapping = aes(HD.SD.1)) +
+  theme_minimal()
+
+```
+
+Sin embargo, en nuestro ejemplo es poco probable que el "proceso" que genera los homicidios dolosos sea el mismo en todos los estados; es mucho más razonable pensar que los homicidios dolosos sean un "proceso" afectado mucho más por condiciones de caracter local. Por lo tanto, en este caso, hace mucho más sentido estandarizar al interior de cada estado:
+
+```{r}
+
+datos.4$HD.SD.2 <- NA
+
+for (i in unique(datos.4$Entidad)){
+  
+  datos.4$HD.SD.2[which(datos.4$Entidad == i)] <- 
+    (
+      datos.4$`Homicidio doloso`[which(datos.4$Entidad == i)] - 
+        mean(datos.4$`Homicidio doloso`[which(datos.4$Entidad == i)])
+      ) / 
+    sd(datos.4$`Homicidio doloso`[which(datos.4$Entidad == i)])
+  
+}
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = HD.SD.2)
+  ) +
+  geom_boxplot() +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = HD.SD.2)
+  ) +
+  geom_density() +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = Entidad.f)
+  ) +
+  geom_boxplot(mapping = aes(HD.SD.2)) +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = HD.SD.2)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  facet_wrap(facets = 'Entidad.f', ncol = 4, scales = 'free') +
+  theme_minimal() +
+  labs(title = 'Densidad histórica del homicidio doloso per capita')
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4[which(datos.4$Entidad == 'Ciudad de México'),]
+  , mapping = aes(x = HD.SD.2)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  theme_minimal() +
+  labs(
+    title = 'Densidad histórica del homicidio doloso per capita (estandarizado)'
+    , subtitle = 'Ciudad de México'
+    )
+
+```
+
+En ocasiones, otro tipo de transformaciones nos permiten:
+
+-   Observar características relevantes de los datos de manera más obvia
+
+-   Obtener una versión "más manejable" de nuestros datos
+
+Por ejemplo:
+
+-   Potencias: $g(y) = y^n$
+
+    -   Una potencia muy utilizada, por ejemplo, para reducir la asimetría de los datos es la raíz cuadrada:
+
+```{r}
+
+ggplot(
+  data = datos.4[which(datos.4$Entidad == 'Ciudad de México'),]
+  , mapping = aes(x = `Homicidio doloso`)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  geom_density(mapping = aes(x = sqrt(`Homicidio doloso`)), fill = 'red', alpha = 0.3) +
+  theme_minimal() +
+  labs(
+    title = 'Densidad histórica del homicidio doloso per capita (estandarizado)'
+    , subtitle = 'Ciudad de México'
+    )
+
+asimetria.2 <- 
+  with(
+    datos.4[which(datos.4$Entidad == 'Ciudad de México'),]
+    , sum(
+      ((`Homicidio doloso` - mean(`Homicidio doloso`)) / 
+        sd(`Homicidio doloso`))^3)
+  ) / nrow(datos.4[which(datos.4$Entidad == 'Ciudad de México'),])
+
+print(comma(asimetria.2, accuracy = 0.0001))
+
+```
+
+-   Transformación de Box-Cox:
+
+$$g(y) = \left\{ \array{\frac{y^{\lambda} - 1}{\lambda} & \lambda \neq 0 \\ ln(y) & \lambda = 0} \right.$$
+
+```{r}
+
+datos.4$HD.3 <- log(datos.4$`Homicidio doloso`)
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = HD.3)
+  ) +
+  geom_boxplot() +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = HD.3)
+  ) +
+  geom_density() +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(y = Entidad.f)
+  ) +
+  geom_boxplot(mapping = aes(HD.3)) +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4
+  , mapping = aes(x = HD.3)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  facet_wrap(facets = 'Entidad.f', ncol = 4, scales = 'free') +
+  theme_minimal() +
+  labs(title = 'Densidad histórica del homicidio doloso per capita')
+
+```
+
+```{r}
+
+ggplot(
+  data = datos.4[which(datos.4$Entidad == 'Ciudad de México'),]
+  , mapping = aes(x = HD.3)
+  ) +
+  geom_density(fill = 'blue', alpha = 0.3) +
+  facet_wrap(facets = 'Entidad.f', ncol = 4, scales = 'free') +
+  theme_minimal() +
+  labs(title = 'Densidad histórica del homicidio doloso per capita')
+
+```
+
+La transformación logarítmica es particularmente relevante para quienes trabajen con datos económico/financieros:
+
+-   Las series de datos financieros con frecuencia contemplan algún efecto "multiplicativo" que bajo la transformación logarítimica se vuelve "aditivo" (y por lo tanto mucho más fácil de modelar).
+
+-   Con frecuencia la transformación logarítmica tiene una interpretación *fácil*[^2] en términos financieros.
+
+[^2]: Ver Anexo 2.
+
+# EL PROCESO DEL AED
+
+1.  Establecer el contexto de los datos.
+
+1.1. Contexto general
+
+1.2. Contexto específico (diccionario de datos)
+
+1.3. Preparación de datos
+
+2.  Generar preguntas sobre los datos.
+
+3.  Dar respuesta a las preguntas.
+
+4.  Iterar refinando las preguntas y/o generar nuevas.
+
+# DESCRIPCIÓN DE LOS DATOS: MULTIVARIADA
+
+Utilizamos el término multivariado para referirnos a estructuras de datos con 2 o más variables de interés. Típicamente tenemos un número de variables significativamente mayor a 2.
+
+Desde luego, lo que queremos (intentamos) es analizar las variables en forma "simultánea", esto es, queremos explorar la relación que existe entre las variables.
+
+Esto, claro está, representa un problema, sobre todo si queremos analizar simultáneamente más de 2 variables.
+
+## VISUALIZACIONES BI-VARIADAS
+
+Un primer punto de partida para la exploración multivariada puede ser el uso de gráficos bi-variados.
+
+Cuando tenemos más de dos variables en nuestros datos, esto se convierte en un análisis por pares. Por ejemplo, podemos hacer gráficas de dispersión por pares.
+
+Consideremos los datos de delitos mensuales per capita en la Ciudad de México por subtipo de delito:
+
+```{r}
+
+# Construye la estructura con los datos: filtra, agrega, relaciona población y calcula delitos per capita.
+# 
+temp <- datos.2
+
+temp <- temp[which(datos.2$Entidad == 'Ciudad de México'),]
+
+temp <- 
+  aggregate(
+    x = list(DELITOS = temp$DELITOS)
+    , by = 
+      list(AÑO = temp$Año, FECHA = temp$FECHA, TIPO = temp$Subtipo.de.delito)
+    , FUN = sum
+    )
+
+temp <- 
+  merge(
+    x = temp
+    , y = poblacion[which(poblacion$ENTIDAD == 'Ciudad de México'),]
+    , by.x = c('AÑO')
+    , by.y = c('AÑO')
+    , all.x = TRUE
+    )
+
+temp$DELITOS.PC <- 100000*temp$DELITOS/temp$POBLACION
+
+temp.r <- temp
+
+temp <- 
+  dcast(data = temp, formula = FECHA ~ TIPO, fill = 0, value.var = 'DELITOS.PC')
+
+datatable(data =temp, rownames = FALSE) %>% formatRound(columns = -1)
+
+```
+
+Dado que estamos utilizando la cifra de delitos per capita podemos argumentar que los datos son comparables en el tiempo (es decir, no hay un efecto "poblaciones"). Entonces, podría interesarnos explorar (preguntarnos) si existen delitos que estén relacionados entre sí.
+
+Podemos, entonces, graficar los delitos por pares:
+
+```{r}
+
+pairs(x = temp[, c(2:7)])
+
+```
+
+Claramente en este subconjunto de variables podemos observar algunas en las que se observa una relación.
+
+> ¿Puedes observar cuáles? ¿Hacen sentido?
+
+La función *pairs* marca un error cuando intentamos incluir muchas variables (un problema con los márgenes del documento), por lo que intentaremos con *ggplot*:
+
+```{r}
+
+variables <- colnames(temp)[-1]
+
+for (i in 1:(length(variables)-1)){
+  
+  for (j in 1:(length(variables)-i)){
+    
+    print(
+      ggplot(
+        data = temp, mapping = aes(x = temp[, variables[i]], y = temp[, variables[i + j]])
+        ) +
+        geom_point() +
+        xlab(variables[i]) +
+        ylab(variables[i + j]) +
+        theme_minimal()
+      )
+    
+    }
+}
+
+```
+
+## CORRELACIÓN
+
+Explorar de manera visual (ya lo comentamos) no siempre es tan fácil. Para explorar la relación bi-variada entre las variables numéricamente necesitamos una estadística que describa en forma resumida la intensidad de la relación entre las variables. Una manera de hacer esto es mediante una medida del cambio simultáneo en las variables al rededor de sus respectivas medias, la "covarianza":
+
+$$Cov(X, Y) = \frac{\sum\limits_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{n}$$
+
+De esta manera, estamos evaluando qué tanto las dos variables se "mueven" en conjunto:
+
+-   Cuando ambas tienen valores por arriba o por abajo de su media de manera simultánea, el valor de la covarianza será positivo y alto;
+
+-   Cuando ambas se alejan de su media pero en sentidos contrarios (en forma simultánea), el valor de la covarianza será negativo y alto (en valor absoluto);
+
+-   Si no se mueven en forma coordinada, el valor de la covarianza será "pequeño".
+
+Un problema de la covarianza, como se puede observar, es que su "tamaño" depende de las unidades de medición, por lo que los términos "pequeña" o "grande" normalmente serán difíciles de valorar (o incluso caracerá de sentido). Por ello, es mucho más común utilizar como referencia a la "correlación":
+
+$$\rho_{X, Y} = Corr(X, Y) = \frac{Cov(X, Y)}{\sigma_X \sigma_Y}$$
+
+```{r}
+
+datatable(cor(x = temp[, -1])) %>% 
+  formatRound(columns = 1:ncol(temp[, -1]), digits = 4)
+
+```
+
+```{r}
+
+temp.cor <- cor(x = temp[, -1])
+
+colnames(temp.cor) <- 1:ncol(temp.cor)
+rownames(temp.cor) <- 1:nrow(temp.cor)
+
+corrplot::corrplot(corr = temp.cor)
+
+```
+
+En ocasiones, nos interesa explorar en particular la relación que existe entre dos variables en particular. Por ejemplo, en el contexto de la incidencia delictiva, es particularmente relevante preguntarse sobre la correlación entre el homicidio doloso y el homicidio culposo:
+
+En el agregado:
+
+```{r}
+
+temp <- 
+  datos.2[
+    which(
+      datos.2$Subtipo.de.delito == 'Homicidio doloso' |
+        datos.2$Subtipo.de.delito == 'Homicidio culposo'
+      )
+    ,
+    ]
+
+temp <- 
+  aggregate(
+    x = list(DELITOS = temp$DELITOS)
+    , by = 
+      list(AÑO = temp$Año, FECHA = temp$FECHA, DELITO = temp$Subtipo.de.delito)
+    , FUN = sum
+    )
+
+temp <- 
+  merge(
+    x = temp
+    , y = 
+      poblacion[
+        which(poblacion$ENTIDAD == 'República Mexicana'), c('AÑO', 'POBLACION')
+        ]
+    , by.x = 'AÑO'
+    , by.y = 'AÑO'
+    , all.x = TRUE
+    )
+
+temp$DELITOS.PC <- 100000*temp$DELITOS/temp$POBLACION
+
+
+temp <-
+  dcast(
+    data = temp
+    , formula = AÑO + FECHA ~ DELITO
+    , value.var = 'DELITOS.PC'
+    , fill = 0
+    , fun.aggregate = sum
+    )
+
+cor(x = temp[, c('Homicidio culposo', 'Homicidio doloso')])
+
+ggplot(
+  data = temp, mapping=aes(x = `Homicidio culposo`, y = `Homicidio doloso`)
+  ) +
+  geom_point() +
+  theme_minimal()
+
+
+ggplot(data = temp, mapping=aes(x = FECHA)) +
+  geom_line(mapping = aes(y = `Homicidio culposo`)) + 
+  geom_point(mapping = aes(y = `Homicidio culposo`), colour = 'red') + 
+  geom_line(mapping = aes(y = `Homicidio doloso`)) +
+  geom_point(mapping = aes(y = `Homicidio doloso`), colour = 'blue') +
+  theme_minimal() +
+  ylab('Delitos')
+
+```
+
+Podríamos ahora preguntarnos si esto se ve igual para todos los estados:
+
+```{r}
+
+temp <- 
+  datos.2[
+    which(
+      datos.2$Subtipo.de.delito == 'Homicidio doloso' |
+        datos.2$Subtipo.de.delito == 'Homicidio culposo'
+      )
+    ,
+    ]
+
+temp <- 
+  aggregate(
+    x = list(DELITOS = temp$DELITOS)
+    , by = 
+      list(
+        AÑO = temp$Año
+        , FECHA = temp$FECHA
+        , ENTIDAD = temp$Entidad
+        , DELITO = temp$Subtipo.de.delito
+        )
+    , FUN = sum
+    )
+
+# Limpiamos los nombres de algunos estados ...
+# 
+temp$ENTIDAD[which(temp$ENTIDAD == 'Coahuila de Zaragoza')] <- 'Coahuila'
+temp$ENTIDAD[which(temp$ENTIDAD == 'Michoacán de Ocampo')] <- 'Michoacán'
+temp$ENTIDAD[which(temp$ENTIDAD == 'Veracruz de Ignacio de la Llave')] <- 
+  'Veracruz'
+
+temp <- 
+  merge(
+    x = temp
+    , y = 
+      poblacion
+    , by.x = c('AÑO', 'ENTIDAD')
+    , by.y = c('AÑO', 'ENTIDAD')
+    , all.x = TRUE
+    )
+
+temp$DELITOS.PC <- 100000*temp$DELITOS/temp$POBLACION
+
+
+temp <-
+  dcast(
+    data = temp
+    , formula = AÑO + FECHA + ENTIDAD ~ DELITO
+    , value.var = 'DELITOS.PC'
+    , fill = 0
+    , fun.aggregate = sum
+    )
+
+correlaciones.edo <- 
+  data.frame(ENTIDAD = unique(temp$ENTIDAD), Correlacion = NA)
+
+for (estado in unique(temp$ENTIDAD)){
+  
+  correlacion <- 
+    cor(
+      x = 
+        temp[
+          which(temp$ENTIDAD == estado)
+          , c('Homicidio doloso', 'Homicidio culposo')
+          ]
+      )[1, 2]
+  
+  correlaciones.edo[which(correlaciones.edo$ENTIDAD == estado), 2] <- 
+    correlacion
+    
+  grafica <- 
+    ggplot(
+      data = temp[which(temp$ENTIDAD == estado),]
+      , mapping=aes(x = `Homicidio doloso`, y = `Homicidio culposo`)) +
+    geom_point() +
+    labs(title = paste0(estado, ' Correlación = ', correlacion)) +
+    theme_minimal()
+  
+  print(grafica)
+  
+  grafica.2 <- 
+    ggplot(
+      data = datos.4[which(temp$ENTIDAD == estado),], mapping=aes(x = FECHA)
+      ) +
+    geom_line(mapping = aes(y = `Homicidio doloso`)) + 
+    geom_point(mapping = aes(y = `Homicidio doloso`), colour = 'red') + 
+    geom_line(mapping = aes(y = `Homicidio culposo`)) +
+    geom_point(mapping = aes(y = `Homicidio culposo`), colour = 'blue') +
+    theme_minimal() +
+    ylab('DELITOS PC')
+  
+  print(grafica.2)
+  
+}
+
+kable(
+  x = 
+    correlaciones.edo[
+      order(abs(correlaciones.edo$Correlacion), decreasing = TRUE), 
+      ]
+  , format = 'pandoc'
+  , row.names = FALSE
+  )
+
+```
+
+# ANÁLISIS DE COMPONENTES PRINCIPALES (ACP)
+
+Una técnica extremadamente fértil para el análisis de datos es el ACP. Desde luego, aquí la usaremos únicamente con fines descriptivos/exploratorios, pero sus aplicaciones son muy extensas.
+
+Con frecuencia el ACP es descrito (muy limitadamente) como una técnica de reducción de dimensionalidad. En realidad, el ACP es una técnica que busca "mapear" un conjunto de $n$ vectores (variables) a otros $n$ vectores, con la propiedad de que los nuevos $n$ vectores transformados sean *ortogonales* entre sí. En este sentido, no hemos reducido la dimensionalidad del problema ya que como resultado seguimos obteniendo $n$ nuevas variables o vectores.
+
+La otra particularidad del ACP es que el mapeo o *rotación* de los vectores tienen dos condiciones o restricciones:
+
+1.  Las nuevas variables sintéticas o rotaciones deben ser transformaciones lineales de las originales.
+
+2.  Estas nuevas variables deben preservar la mayor cantidad de información posible contenida en los datos originales.
+
+2.1. Por "información" se entiende la suma de la varianza de las variables originales.
+
+## ACP PARA DESCRIBIR LA "COMPOSICIÓN" DE LOS DATOS ORIGINALES
+
+Utilizaremos un ejemplo para explicar la utilidad del ACP para describir a nuestros datos.
+
+Tomemos los delitos ocurridos en la CDMX:
+
+```{r}
+
+temp <- datos.2[which(datos.2$Entidad == 'Ciudad de México'),]
+
+temp <- 
+  aggregate(
+    x = list(DELITOS = temp$DELITOS)
+    , by = 
+      list(AÑO = temp$Año, FECHA = temp$FECHA, DELITO = temp$Subtipo.de.delito)
+    , FUN = sum
+    )
+
+temp <- 
+  merge(
+    x = temp
+    , y = 
+      poblacion[
+        which(poblacion$ENTIDAD == 'Ciudad de México'), c('AÑO', 'POBLACION')
+        ]
+    , by.x = 'AÑO'
+    , by.y = 'AÑO'
+    , all.x = TRUE
+    )
+
+temp$DELITOS.PC <- 100000*temp$DELITOS/temp$POBLACION
+
+
+temp <-
+  dcast(
+    data = temp
+    , formula = AÑO + FECHA ~ DELITO
+    , value.var = 'DELITOS.PC'
+    , fill = 0
+    , fun.aggregate = sum
+    )
+
+Hmisc::describe(temp)
+
+```
+
+Si quisiéramos caracterizar o describir a la delincuencia observada en la CDMX en los años registrados seguramente nos costaría trabajo ya que tenemos 55 delitos (columnas) para describirla. Entonces podemos recurrir al ACP para ayudarnos a entender mejor los datos.
+
+Para poder utilizar el ACP, sin embargo, tenemos que tener cuidado de no incluir variables sin variación (recordemos que el ACP maximiza varianza):
+
+```{r}
+
+# temp <- temp.r
+
+temp.r <- temp
+
+temp <- temp[, 1:2]
+
+for (i in 3:ncol(temp.r)){
+  
+  if (var(temp.r[, i]) > 0){
+    
+    temp <- cbind(temp, temp.r[,i])
+    
+    colnames(temp)[ncol(temp)] <- colnames(temp.r)[i]
+    
+  }
+  
+}
+
+acp.delitos <- prcomp(x = as.matrix(temp[, 3:ncol(temp)]))
+
+summary(acp.delitos)
+
+```
+
+El *summary* del ACP nos muestra la "cantidad" de información que cada una de las componentes principales retiene respecto de los datos originales. Podemos ver, por ejemplo, que la primera componente está reteniendo un 45% de la varianza original de los datos.
+
+Ahora, si recordamos la descripción que hicimos del ACP, recordemos que cada componente es una transformación lineal de los datos originales. Esto significa que existe un conjunto (vector) de coeficientes asociado a cada componente:
+
+```{r}
+
+kable.x <- 
+  data.frame(DELITO = colnames(temp[, 3:ncol(temp)]), COEFICIENTE = acp.delitos$rotation[, 1])
+
+kable.x <- kable.x[order(abs(kable.x$COEFICIENTE), decreasing = TRUE),]
+
+kable(x = kable.x, row.names = FALSE)
+
+```
+
+En este caso, lo que nos está diciendo el ACP, es que el delito de "Violencia Familiar" es el que más influye individualmente en la variabilidad de los datos de la CDMX.
+
+```{r}
+
+ggplot(data = temp, mapping = aes(x = FECHA, y = `Violencia familiar`)) +
+  geom_point() +
+  geom_line() +
+  theme_minimal()
+
+```
+
+Y si lo comparamos contra el que menos aporta:
+
+```{r}
+
+ggplot(data = temp, mapping = aes(x = FECHA, y = `Violencia familiar`)) +
+  geom_point() +
+  geom_line() +
+  geom_point(mapping = aes(y = Incesto)) +
+  geom_line(mapping = aes(y = Incesto)) +
+  theme_minimal()
+
+```
+
+```{r}
+
+ggplot(data = temp, mapping = aes(x = FECHA, y = Incesto)) +
+  geom_point() +
+  geom_line() +
+  theme_minimal()
+
+```
+
+Observemos también que entre el que más aporta y el segundo lugar, hay una diferencia de signo. Si bien los signos son asignados de manera arbitraria en el ACP, lo que sí podemos esperar es un comportamiento contrario en ambas variables:
+
+```{r}
+
+ggplot(data = temp, mapping = aes(x = FECHA, y = `Violencia familiar`)) +
+  geom_point() +
+  geom_line() +
+  geom_point(mapping = aes(y = `Robo a transeúnte en vía pública`)) +
+  geom_line(mapping = aes(y = `Robo a transeúnte en vía pública`)) +
+  theme_minimal() +
+  ylab('DELITOS PC')
+
+
+```
+
+¿De qué otra manera podemos ver esto?
+
+```{r}
+
+cor(x = temp$`Violencia familiar`, y = temp$`Robo a transeúnte en vía pública`)
+
+```
+
+Dado que las componentes explican sucesivamente menores proporciones de varianza la interpretación de los coeficientes también se hace un poquito más compleja (se convierten en aportaciones marginales). No vamos a profundizar.
+
+Sin embargo, es relevante revisar dos aspectos adicionales del ACP. En primer lugar es importante observar que la manera en la que presentamos el ACP funciona maximizando la varianza de los datos originales. En ocasiones (probablemente no en el ejemplo que utilizamos) esto no es lo más apropiado. Veamos rápidamente otro conjunto de datos.
+
+```{r}
+
+pinguinos <- palmerpenguins::penguins
+
+Hmisc::describe(pinguinos)
+
+kable(x = head(pinguinos))
+
+```
+
+Si consideramos numéricas (3 a 6):
+
+```{r}
+
+acp.pinguinos <- prcomp(x = pinguinos[complete.cases(pinguinos), 3:6])
+
+acp.pinguinos
+
+summary(acp.pinguinos)
+
+kable(x = acp.pinguinos$rotation)
+
+```
+
+> ¿Qué error cometí en este "análisis"?
+
+¿Qué podemos observar de la variable *body_mass_g* en comparación con las otras variables?
+
+> El ACP con base en la varianza es sensible (muy) a la escala de los datos.
+
+Por eso, con frecuencia se observa que se utiliza el ACP re-escalado para considerar varianzas unitarias (ACP con base en covarianzas).
+
+```{r}
+
+acp.pinguinos <- 
+  prcomp(x = pinguinos[complete.cases(pinguinos), 3:6], scale. = TRUE)
+
+acp.pinguinos
+
+summary(acp.pinguinos)
+
+kable(x = acp.pinguinos$rotation)
+
+```
+
+# ANÁLISIS DE SERIES DE TIEMPO
+
+# CONCLUSIONES SOBRE NUESTROS DATOS
+
+> -   ¿Qué podemos entonces decir ahora de nuestros datos tras haber realizado el AED?
+
+> > -   Nuestros datos necesitan diversas transformaciones de "forma" para poder utilizarlos apropiadamente.
+
+> > -   Podemos realizar estudios de corte transversal
+
+> > -   Pero también series de tiempo
+
+> > > -   Algunas de ella de carácter composicional
+
+> > -   Algunos de estos estudios pueden ser multivariados
+
+> > -   El estado de México y la Ciudad de México presentan la mayor cantidad de delitos.
+
+> > > -   La participación de cada delito en estas entidades: ¿es la misma? ¿Existen diferencias estadísticamente significativas?
+
+> > -   Algunos estados parecen presentar indicios de "administración" de las cifras.
+
+> > > -   Sería conveniente "enriquecer" nuestros datos, por ejemplo, con datos sobre cifra negra (INEGI).
+
+> > > -   ¿Podemos hacer algún tipo de prueba adicional sobre este punto?
+
+# ADVERTENCIA: USO DE LOS DATOS
+
+La principal advertencia que tenemos que considerar cuando realizamos un AED es la siguiente: estamos haciendo una **EXPLORACIÓN** de los datos; no estamos buscando qué datos se ajustan o parecen confirmar nuestras creencias.
+
+Esto es un peligro muy real y difícil de evadir con frecuencia.
+
+Para evitar caer en ello, en ocasiones puede ser recomendable realizar el AED sobre una partición (muestra) de los datos considerando diferentes necesidades:
+
+-   AED
+
+-   Ajuste / calibración del (eventual) modelo
+
+-   Contraste / validación del modelo (generalmente se sugiere NO realizar AED sobre esta partición de los datos)
+
+Algunas preguntas adicionales que debemos hacernos cuando nos planteamos estas particiones:
+
+-   ¿Cuántos datos debo tomar para cada propósito?
+
+-   ¿Cómo puedo asegurarme de que mis datos sirven para cada propósito?
+
+    -   ¿Cómo hago esto en series de tiempo?
+
+-   ¿Qué tipo de muestreo?
+
+Algunas de las respuestas a estas preguntas hacen notar lo obvio: en ocasiones no podemos o no queremos realizar el AED sobre una partición de los datos. En estos casos es muy importante apegarnos principios éticos. En otras palabras, es importante no engañar(nos) y estar seguros de que nuestro análisis es realmente **exploratorio** y que no estamos buscando justificar una propuesta escogiendo datos a modo.
+
+# EL PROCESO DEL AED
+
+1.  Establecer el contexto de los datos.
+
+1.1. Contexto general
+
+1.2. Contexto específico (diccionario de datos)
+
+1.3. Preparación de datos
+
+2.  Generar preguntas sobre los datos.
+
+3.  Dar respuesta a las preguntas.
+
+4.  Iterar refinando las preguntas y/o generar nuevas.
+
+# ANEXO 1. ESTIMADOR SESGADO DE LA VARIANZA
+
+Supongamos que $\{x_1,x_2,...,x_n\}$ representan una muestra de una variable aleatoria con $E[x_i]=\mu$ y $Var[x_i]=\sigma$. Definimos al estimador de la varianza como:
+
+$$\hat{S}^2 = \frac{1}{n} \sum\limits_{i = 1}^n (x_i - \bar{x})^2$$
+
+Entonces, buscamos conocer $E[\hat{S}^2]$. Comenzamos por expandir los términos dentro de la sumatoria:
+
+$$\hat{S}^2 = \frac{1}{n} \sum\limits_{i = 1}^n (x_i - \bar{x})^2 = \frac{1}{n} \left\{ \sum\limits_{i = 1}^n [x_i^2 - 2\bar{x}x_i + \bar{x}^2] \right\} =$$
+
+$$\left[ \frac{1}{n} \sum\limits_{i = 1}^n x_i^2 \right] - 2\bar{x}\left[\frac{1}{n} \sum\limits_{i = 1}^n x_i \right] + \frac{1}{n}n\bar{x}^2 = \left[ \frac{1}{n} \sum\limits_{i = 1}^n x_i^2 \right] - 2 \bar{x}^2 + \bar{x}^2 = \left[ \frac{1}{n} \sum\limits_{i = 1}^n x_i^2 \right] - \bar{x}^2 =$$
+
+Si ahora calculamos la esperanza de esta expresión tenemos que:
+
+$$E\left[\hat{S}^2\right] = E\left[\left( \frac{1}{n} \sum\limits_{i = 1}^n x_i^2 \right) - \bar{x}^2\right] = \frac{1}{n} \left[ \sum\limits_{i = 1}^n E[x_i^2] \right] - E[\bar{x}^2] =$$
+
+Ahora, recordaremos que para cualquier variable aleatoria $Y$ se cumple que:
+
+$$Var[Y] = E[Y^2] - E[Y]^2 \Rightarrow E[Y^2] = Var[Y] + E[Y]^2$$
+
+Entonces:
+
+$$E[\bar{x}^2] = Var[\bar{x}] + E[\bar{x}]^2$$
+
+Desarrollando $Var[\bar{x}]$:
+
+$$Var[\bar{x}] = Var \left[ \frac{1}{n}\sum\limits_{i=1}^n x_i \right] = \frac{1}{n^2} Var \left[ \sum\limits_{i=1}^n x_i \right] =$$
+
+$$\frac{1}{n^2} \sum\limits_{i=1}^n Var \left[ x_i \right] = \frac{n*\sigma^2}{n^2} = \frac{\sigma^2}{n}$$
+
+Desarrollamos ahora el otro término:
+
+$$E[\bar{x}]^2 = E \left[ \frac{1}{n} \sum\limits_{i=1}^n x_i \right]^2 = \left[ \frac{1}{n} \sum\limits_{i=1}^n E[x_i] \right]^2 = \left[ \frac{n\mu}{n} \right]^2 = \mu^2$$
+
+Regresamos entonces a sustituir y tenemos que:
+
+$$E\left[\hat{S}^2\right] = \frac{1}{n} \left[ \sum\limits_{i = 1}^n E[x_i^2] \right] - E[\bar{x}^2] = \frac{1}{n} \left[ \sum\limits_{i = 1}^n E[x_i^2] \right] - \frac{\sigma^2}{n} - \mu^2$$
+
+Ahora veamos el otro término:
+
+$$E[x_i^2] = Var(x_i) + E[x_i]^2 = \sigma + \mu^2$$
+
+Entonces:
+
+$$\frac{1}{n} \left[ \sum\limits_{i = 1}^n E[x_i^2] \right] = \frac{1}{n} \left[ \sum\limits_{i = 1}^n [\sigma + \mu^2] \right] = \sigma + \mu^2$$
+
+Por lo tanto:
+
+$$E\left[\hat{S}^2\right] = \sigma + \mu^2 - \frac{\sigma^2}{n} - \mu^2 = \sigma \left(1 - \frac{1}{n} \right) = \frac{n-1}{n} \sigma \neq \sigma$$
+
+Por lo que hemos demostrado que el estimador propuesto para la varianza es un estimador sesgado.
+
+# ANEXO 2. INTERPRETACIÓN FINANCIERA DE LA TRANSFORMACIÓN LOGÍSTICA
+
+Supongamos que se cuenta con una serie de tiempo $X = {x_1, ..., x_n}$. Si podemos expresar cada valor de la serie de tiempo como $x_i = a(i) = x_0 * e^{t * \delta}$ entonces:
+
+$$ln(x_i) = ln(x_0 * e^{t * \delta}) = ln(x_0) + ln(e^{t * \delta}) =$$
+
+$$ln(x_0) + t * \delta*ln(e) = ln(x_0) + t * \delta$$
+
+A $\delta$ se le conoce como la *fuerza de interés*. Entonces, la transformación logarítmica permite expresar a la serie de tiempo como una transformación lineal de la fuerza de interés.
+
+# REFERENCIAS
