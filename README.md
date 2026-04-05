@@ -3,10 +3,10 @@ Proyecto desarrollado en R Markdown como parte de mi formación en ciencia de da
 
 El análisis incluye:
 
--limpieza y transformación de datos en R
--análisis estadístico descriptivo
--visualización de patrones geográficos y temporales
--identificación de tendencias en delitos de alto impacto
--generación de reportes reproducibles en R Markdown
+- limpieza y transformación de datos en R
+- análisis estadístico descriptivo
+- visualización de patrones geográficos y temporales
+- identificación de tendencias en delitos de alto impacto
+- generación de reportes reproducibles en R Markdown
 
 Este proyecto busca traducir datos públicos en evidencia útil para la toma de decisiones y el análisis de política pública.
